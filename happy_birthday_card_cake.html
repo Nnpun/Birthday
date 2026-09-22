@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday Interactive Card & Cake 🎂✨</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #ffe4e6 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            transition: background 0.8s ease;
+        }
+
+        /* Dimmed Party Lights Mode for Wish/Blow Stage */
+        body.dim-mode {
+            background: #0f172a !important;
+            color: #f8fafc;
+        }
+
+        .font-mali {
+            font-family: 'Mali', cursive;
+        }
+
+        /* Flame Animation with Glow */
+        @keyframes flicker {
+            0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.95; }
+            25% { transform: scale(1.15, 1.2) rotate(3deg); opacity: 1; }
+            50% { transform: scale(0.9, 0.85) rotate(-1deg); opacity: 0.85; }
+            75% { transform: scale(1.05, 1.1) rotate(1deg); opacity: 1; }
+        }
+
+        .flame {
+            animation: flicker 0.5s infinite alternate ease-in-out;
+            transform-origin: center bottom;
+            filter: drop-shadow(0px 0px 10px rgba(255, 180, 0, 0.9));
+        }
+
+        .dim-mode .flame {
+            filter: drop-shadow(0px 0px 18px rgba(255, 200, 50, 1));
+        }
+
+        /* Candle Smoke Effect */
+        @keyframes smokeRise {
+            0% { transform: translateY(0) scale(0.5); opacity: 0.8; }
+            50% { transform: translateY(-25px) scale(1.3); opacity: 0.5; }
+            100% { transform: translateY(-50px) scale(2.2); opacity: 0; }
+        }
+
+        .smoke {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(200, 200, 200, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: smokeRise 1.2s forwards ease-out;
+        }
+
+        /* Floating elements background */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(6deg); }
+        }
+
+        .floating-bg {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        /* Envelope Open Animation */
+        .envelope-wrapper {
+            perspective: 1000px;
+        }
+
+        .envelope {
+            position: relative;
+            width: 290px;
+            height: 190px;
+            background: #f43f5e;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(244, 63, 94, 0.35);
+            cursor: pointer;
+            transition: transform 0.4s ease;
+        }
+
+        .envelope:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            border-left: 145px solid transparent;
+            border-right: 145px solid transparent;
+            border-top: 105px solid #fb7185;
+            transform-origin: top;
+            transition: transform 0.6s ease 0.2s, z-index 0.2s;
+            z-index: 3;
+        }
+
+        .envelope-open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        .envelope-pocket {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 115px;
+            background: #e11d48;
+            border-radius: 0 0 12px 12px;
+            z-index: 2;
+            clip-path: polygon(0 0, 50% 35px, 100% 0, 100% 100%, 0 100%);
+        }
+
+        /* Scratch/Gift Coupon Style */
+        .coupon-card {
+            background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+            border: 2px dashed #d8b4fe;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between items-center p-3 md:p-6 relative select-none">
+
+    <!-- TOP NAVIGATION BAR / VIEW SWITCHER -->
+    <header class="w-full max-w-2xl flex items-center justify-between z-40 bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-full shadow-md border border-pink-100 mb-4 transition-colors duration-500">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🎂</span>
+            <span id="app-logo-text" class="font-mali font-bold text-pink-600 text-sm md:text-base">HBD Wish Studio</span>
+        </div>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="flex bg-pink-100 p-1 rounded-full text-xs font-semibold">
+            <button id="nav-creator-btn" onclick="switchView('creator')" class="px-3 py-1.5 rounded-full transition-all text-pink-700 bg-white shadow-sm">
+                🛠️ หน้าผู้สร้าง
+            </button>
+            <button id="nav-recipient-btn" onclick="switchView('recipient')" class="px-3 py-1.5 rounded-full transition-all text-gray-500 hover:text-pink-600">
+                🎁 หน้าผู้รับ (สแกน)
+            </button>
+        </div>
+
+        <!-- Audio Toggle Button -->
+        <button id="audio-toggle-btn" onclick="toggleAudio()" class="p-2 rounded-full bg-pink-50 text-pink-600 hover:bg-pink-100 transition" title="เปิด/ปิดเพลง">
+            <i data-lucide="music" class="w-4 h-4"></i>
+        </button>
+    </header>
+
+    <!-- Floating Background Decorative Elements -->
+    <div id="floating-bg-container" class="fixed inset-0 pointer-events-none overflow-hidden z-0 transition-opacity duration-700">
+        <div class="floating-bg absolute top-12 left-[8%] text-3xl opacity-60">🎈</div>
+        <div class="floating-bg absolute top-1/4 right-[10%] text-4xl opacity-50" style="animation-delay: 1s;">✨</div>
+        <div class="floating-bg absolute bottom-20 left-[12%] text-4xl opacity-50" style="animation-delay: 2s;">🌸</div>
+        <div class="floating-bg absolute bottom-1/3 right-[8%] text-3xl opacity-60" style="animation-delay: 1.5s;">🎁</div>
+    </div>
+
+    <!-- VIEW 1: CREATOR / CONFIGURATION VIEW -->
+    <section id="creator-view" class="w-full max-w-xl mx-auto flex-1 flex flex-col items-center z-10 py-2">
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-5 md:p-7 shadow-xl border border-pink-100 w-full">
+            
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-pink-600 font-mali flex items-center justify-center gap-2">
+                    <span>ตั้งค่าวันเกิดให้เพื่อน</span>
+                    <i data-lucide="sparkles" class="w-6 h-6 text-amber-400"></i>
+                </h1>
+                <p class="text-gray-500 text-xs md:text-sm mt-1">ใส่ข้อความ รูปภาพ แกลเลอรี และสุ่มคูปอง แล้วสร้าง QR Code ให้เพื่อนสแกน!</p>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <!-- Recipient Name & Title -->
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">ชื่อเพื่อน / หัวข้ออวยพร 💖</label>
+                    <input type="text" id="cfg-title" value="Happy Birthday! ถึงเพื่อนรัก 🎉" class="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none bg-pink-50/30">
+                </div>
+
+                <!-- Main Greeting Text -->
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">คำอวยพรวันเกิด 📝</label>
+                    <textarea id="cfg-message" rows="3" class="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none bg-pink-50/30 font-mali">สุขสันต์วันเกิดนะเพื่อน! 🥳🎂 ขอให้ปีนี้เป็นปีที่มีความสุขมากๆ สุขภาพแข็งแรง คิดสิ่งใดก็สมปรารถนา รวยๆ ปังๆ ทุกวันเลยนะ 💕✨</textarea>
+                </div>
+
+                <!-- Main Photo Upload -->
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">รูปภาพหลักของการ์ด 🖼️</label>
+                    <div class="flex items-center gap-3">
+                        <img id="cfg-main-preview" src="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80" class="w-14 h-14 object-cover rounded-xl border border-pink-200 shadow-sm">
+                        <label class="cursor-pointer bg-pink-50 hover:bg-pink-100 text-pink-600 px-4 py-2 rounded-xl border border-pink-200 text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>เลือกรูปภาพหลัก</span>
+                            <input type="file" accept="image/*" class="hidden" onchange="handleMainPhotoUpload(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Memory Photo Gallery Upload (Multiple) -->
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">แกลเลอรีรูปภาพความทรงจำ 📸 (สูงสุด 4 รูป)</label>
+                    <div id="cfg-gallery-preview" class="flex gap-2 my-2 overflow-x-auto py-1">
+                        <!-- Dynamic thumbs -->
+                    </div>
+                    <label class="cursor-pointer bg-slate-50 hover:bg-slate-100 text-gray-700 px-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold inline-flex items-center gap-1.5 transition">
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-pink-500"></i>
+                        <span>เพิ่มรูปแกลเลอรี</span>
+                        <input type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
+                    </label>
+                </div>
+
+                <!-- Coupon Gift List Config -->
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">คูปองของขวัญสำหรับสุ่มสิทธิพิเศษ 🎟️</label>
+                    <input type="text" id="cfg-coupons" value="คูปองชาไข่มุก 1 แก้ว 🧋, คูปองเจ้ามือมื้อเย็น 1 มื้อ 🍕, คูปองเลี้ยงกาแฟสด ☕, คูปองขอบอกรัก 1 วัน 💕" class="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-pink-400 focus:outline-none bg-pink-50/30 text-xs">
+                    <p class="text-[11px] text-gray-400 mt-1">*แยกคูปองแต่ละใบด้วยเครื่องหมายจุลภาค (,)</p>
+                </div>
+            </div>
+
+            <!-- Generate QR Code & Preview Trigger Button -->
+            <div class="mt-6 pt-4 border-t border-pink-100 flex flex-col sm:flex-row gap-3">
+                <button onclick="generateAndShowQR()" class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-3 rounded-2xl shadow-lg shadow-pink-500/25 transition flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="qr-code" class="w-5 h-5"></i>
+                    <span>สร้าง QR Code ให้เพื่อนสแกน</span>
+                </button>
+                <button onclick="previewRecipientExperience()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold px-5 py-3 rounded-2xl transition flex items-center justify-center gap-1.5 text-sm">
+                    <i data-lucide="play-circle" class="w-5 h-5"></i>
+                    <span>ลองเล่นหน้าผู้รับ</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW 2: RECIPIENT / CANDLE & CARD EXPERIENCE -->
+    <section id="recipient-view" class="w-full max-w-xl mx-auto flex-1 flex flex-col items-center justify-center relative z-10 py-4 hidden">
+
+        <!-- Stage Header Display -->
+        <header class="text-center mb-4 transition-all duration-500">
+            <h1 id="rec-header-title" class="text-2xl md:text-3xl font-extrabold text-pink-600 font-mali tracking-wide drop-shadow-sm transition-all duration-500">
+                Happy Birthday! 🎂✨
+            </h1>
+            <p id="rec-header-sub" class="text-gray-600 text-xs md:text-sm mt-1 transition-all duration-500">
+                จิ้มหน้าจอที่ตัวเค้กเพื่อปักเทียนวันเกิด 🕯️
+            </p>
+        </header>
+
+        <!-- Interactive Birthday Cake Surface Container -->
+        <div class="relative w-full flex flex-col items-center my-2">
+            
+            <div id="cake-interactive-area" onclick="handleCakeClick(event)" class="relative w-72 h-72 md:w-80 md:h-80 cursor-pointer group select-none">
+                
+                <!-- Dynamic Candles Overlay -->
+                <div id="candles-container" class="absolute inset-0 z-30 pointer-events-none"></div>
+
+                <!-- SVG Birthday Cake -->
+                <svg viewBox="0 0 300 300" class="w-full h-full filter drop-shadow-xl transition-transform duration-300 group-hover:scale-[1.01]">
+                    <!-- Plate -->
+                    <ellipse cx="150" cy="255" rx="130" ry="25" fill="#e2e8f0" />
+                    <ellipse cx="150" cy="250" rx="120" ry="22" fill="#ffffff" stroke="#cbd5e1" stroke-width="3" />
+
+                    <!-- Bottom Cake Layer -->
+                    <path d="M 50 180 Q 150 210 250 180 L 250 235 Q 150 265 50 235 Z" fill="#f472b6" />
+                    <path d="M 50 200 Q 150 230 250 200 L 250 215 Q 150 245 50 215 Z" fill="#fbcfe8" opacity="0.6" />
+                    <path d="M 50 180 Q 150 210 250 180 L 250 192 Q 150 222 50 192 Z" fill="#fb7185" />
+
+                    <!-- Cream Drips -->
+                    <path d="M 50 180 Q 70 195 90 180 Q 110 195 130 180 Q 150 195 170 180 Q 190 195 210 180 Q 230 195 250 180 L 250 170 Q 150 200 50 170 Z" fill="#fff" />
+
+                    <!-- Top Cake Layer -->
+                    <path d="M 75 120 Q 150 145 225 120 L 225 175 Q 150 200 75 175 Z" fill="#f43f5e" />
+                    <path d="M 75 140 Q 150 165 225 140 L 225 152 Q 150 177 75 152 Z" fill="#fda4af" opacity="0.7" />
+
+                    <!-- Top Frosting Drops -->
+                    <path d="M 75 120 Q 90 132 105 120 Q 120 132 135 120 Q 150 132 165 120 Q 180 132 195 120 Q 210 132 225 120 L 225 110 Q 150 135 75 110 Z" fill="#ffffff" />
+
+                    <!-- Top Surface Area for Candles -->
+                    <ellipse id="cake-top-surface" cx="150" cy="115" rx="75" ry="25" fill="#fef08a" stroke="#fde047" stroke-width="2" />
+                    
+                    <!-- Decorative Frosting Swirls -->
+                    <circle cx="90" cy="115" r="7" fill="#ffffff" />
+                    <circle cx="115" cy="123" r="7" fill="#ffffff" />
+                    <circle cx="150" cy="126" r="8" fill="#ffffff" />
+                    <circle cx="185" cy="123" r="7" fill="#ffffff" />
+                    <circle cx="210" cy="115" r="7" fill="#ffffff" />
+
+                    <!-- Strawberries -->
+                    <circle cx="100" cy="108" r="5" fill="#e11d48" />
+                    <circle cx="130" cy="112" r="5" fill="#e11d48" />
+                    <circle cx="170" cy="112" r="5" fill="#e11d48" />
+                    <circle cx="200" cy="108" r="5" fill="#e11d48" />
+                </svg>
+            </div>
+
+            <!-- Step Control Action Area -->
+            <div class="mt-4 flex flex-col items-center gap-3 w-full">
+                <!-- Counter Badge -->
+                <div id="candle-counter-badge" class="flex items-center gap-2 bg-white/90 backdrop-blur px-4 py-1.5 rounded-full shadow-sm border border-pink-100 text-pink-600 font-medium text-xs md:text-sm">
+                    <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i>
+                    <span>จำนวนเทียน: <strong id="candle-count-display" class="text-sm md:text-base text-pink-600">0</strong> เล่ม</span>
+                </div>
+
+                <!-- Step 1 Button: Finish Candle Placement -->
+                <button id="btn-finish-candles" onclick="proceedToBlowStep()" disabled 
+                    class="hidden opacity-50 cursor-not-allowed bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold px-7 py-3 rounded-full shadow-lg shadow-pink-500/30 transition duration-300 transform active:scale-95 flex items-center gap-2 text-sm">
+                    <span>ปักเทียนเสร็จแล้ว พร้อมอธิษฐาน! ✨</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Step 2 Controls: Wish & Blow Options -->
+                <div id="blow-controls" class="hidden flex flex-col items-center text-center animate-bounce mt-2 gap-2">
+                    <p class="text-amber-300 font-bold text-base md:text-lg flex items-center justify-center gap-1.5 drop-shadow">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
+                        ตั้งจิตอธิษฐานแล้วดับเทียน! 🔮✨
+                    </p>
+
+                    <!-- Mic Blow & Tap Action Buttons -->
+                    <div class="flex flex-wrap justify-center items-center gap-2.5 mt-1">
+                        <button id="btn-mic-toggle" onclick="toggleMicrophoneBlow()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs md:text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg transition flex items-center gap-1.5 border border-rose-400">
+                            <i data-lucide="mic" class="w-4 h-4"></i>
+                            <span id="mic-btn-text">เปิดไมค์เพื่อเป่าจริง 🎙️</span>
+                        </button>
+                        <button onclick="blowAllCandles()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs md:text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg transition flex items-center gap-1.5">
+                            <i data-lucide="wind" class="w-4 h-4"></i>
+                            <span>เป่าดับทั้งหมด 💨</span>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-gray-300 font-light mt-1">(หรือจิ้มที่เปลวไฟของเทียนแต่ละเล่มเพื่อดับได้เลย)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL 1: ENVELOPE POP-UP -->
+    <div id="envelope-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-500">
+        <div class="flex flex-col items-center text-center">
+            <h2 class="text-white text-2xl font-bold font-mali mb-6 drop-shadow flex items-center gap-2 animate-pulse">
+                <span>มีจดหมายอวยพรถึงคุณ 💌</span>
+            </h2>
+
+            <div id="envelope-card" onclick="openGreetingCard()" class="envelope-wrapper">
+                <div class="envelope flex flex-col items-center justify-center">
+                    <div class="envelope-flap"></div>
+                    <div class="envelope-pocket"></div>
+                    <div class="z-10 text-white text-center p-4">
+                        <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner">
+                            <i data-lucide="heart" class="w-6 h-6 fill-white text-white"></i>
+                        </div>
+                        <p class="font-mali text-sm font-semibold tracking-wide">แตะเพื่อเปิดการ์ดอวยพร ✨</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: DETAILED GREETING CARD & SURPRISE COUPON -->
+    <div id="card-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-500">
+        <div id="card-content" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-5 md:p-7 relative transform scale-90 transition-all duration-500 my-auto border-4 border-pink-100 text-slate-800">
+            
+            <div class="absolute -top-4 -right-2 text-3xl">🎉</div>
+            <div class="absolute -top-4 -left-2 text-3xl">🎂</div>
+
+            <!-- Card Header -->
+            <div class="text-center mb-4">
+                <span class="inline-block px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-semibold tracking-wider uppercase mb-1.5">Birthday Wish Card</span>
+                <h2 id="card-display-title" class="text-2xl font-extrabold text-pink-600 font-mali">
+                    Happy Birthday! 🎉
+                </h2>
+            </div>
+
+            <!-- Card Main Featured Photo -->
+            <div class="relative w-full h-52 rounded-2xl overflow-hidden bg-pink-50 border border-pink-200 mb-4 shadow-sm">
+                <img id="card-display-main-photo" src="" alt="Birthday" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Greeting Text Message -->
+            <div class="bg-gradient-to-b from-pink-50/60 to-purple-50/60 p-4 rounded-2xl border border-pink-100 mb-4 relative">
+                <i data-lucide="quote" class="w-5 h-5 text-pink-300 absolute top-2 right-2 opacity-50"></i>
+                <p id="card-display-message" class="text-gray-700 font-normal leading-relaxed text-center font-mali text-sm md:text-base whitespace-pre-line"></p>
+            </div>
+
+            <!-- Memory Photo Gallery Section -->
+            <div id="card-gallery-section" class="mb-4 hidden">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <i data-lucide="images" class="w-3.5 h-3.5 text-pink-500"></i>
+                    <span>ความทรงจำร่วมกัน 📸</span>
+                </h4>
+                <div id="card-display-gallery" class="grid grid-cols-4 gap-2"></div>
+            </div>
+
+            <!-- Surprise Coupon Section -->
+            <div id="card-coupon-section" class="coupon-card rounded-2xl p-4 text-center relative overflow-hidden mb-5">
+                <span class="text-[11px] font-bold text-purple-600 uppercase tracking-wider block mb-1">🎁 ของขวัญพิเศษสำหรับคุณ</span>
+                <div id="coupon-result-text" class="text-base font-bold text-purple-900 font-mali my-1">
+                    กดปุ่มด้านล่างเพื่อสุ่มคูปอง! ✨
+                </div>
+                <button id="btn-draw-coupon" onclick="drawSurpriseCoupon()" class="mt-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-semibold px-4 py-2 rounded-full shadow transition transform active:scale-95 inline-flex items-center gap-1">
+                    <i data-lucide="gift" class="w-3.5 h-3.5"></i>
+                    <span>สุ่มคูปองของขวัญ</span>
+                </button>
+            </div>
+
+            <!-- Footer Action Controls -->
+            <div class="flex gap-2">
+                <button onclick="switchView('creator')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    <span>กลับหน้าผู้สร้าง</span>
+                </button>
+                <button onclick="restartRecipientExperience()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1 shadow shadow-pink-500/20">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span>เป่าเค้กอีกครั้ง</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: QR CODE GENERATOR POPUP -->
+    <div id="qr-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-pink-100 text-center relative">
+            <button onclick="closeQRModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="qr-code" class="w-6 h-6"></i>
+            </div>
+            
+            <h3 class="text-xl font-bold text-gray-800 font-mali mb-1">QR Code วันเกิดเพื่อน</h3>
+            <p class="text-xs text-gray-500 mb-4">ให้เพื่อนใช้กล้องมือถือสแกนเพื่อเปิดรับการ์ดและร่วมเป่าเค้ก</p>
+
+            <!-- Generated QR Code Container -->
+            <div class="flex justify-center my-4 p-3 bg-white rounded-2xl shadow-inner border border-gray-100">
+                <div id="qrcode-canvas" class="flex justify-center"></div>
+            </div>
+
+            <p class="text-[11px] text-pink-500 font-medium mb-4">✨ ข้อมูลและรูปภาพถูกบันทึกพร้อมสแกนใช้งานแล้ว</p>
+
+            <button onclick="previewRecipientExperience(); closeQRModal();" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2.5 rounded-xl text-sm shadow transition">
+                เปิดดูหน้าประสบการณ์ผู้รับทันที
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800/90 backdrop-blur text-white px-4 py-2.5 rounded-full text-xs md:text-sm font-medium shadow-lg opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-2">
+        <span id="toast-text">แจ้งเตือน</span>
+    </div>
+
+    <script>
+        /* APP STATE MANAGEMENT */
+        let config = {
+            title: "Happy Birthday! ถึงเพื่อนรัก 🎉",
+            message: "สุขสันต์วันเกิดนะเพื่อน! 🥳🎂 ขอให้ปีนี้เป็นปีที่มีความสุขมากๆ สุขภาพแข็งแรง คิดสิ่งใดก็สมปรารถนา รวยๆ ปังๆ ทุกวันเลยนะ 💕✨",
+            mainPhoto: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
+            gallery: [],
+            coupons: ["คูปองชาไข่มุก 1 แก้ว 🧋", "คูปองเจ้ามือมื้อเย็น 1 มื้อ 🍕", "คูปองเลี้ยงกาแฟสด ☕", "คูปองขอบอกรัก 1 วัน 💕"]
+        };
+
+        let recipientState = {
+            step: 1, // 1: Place candles, 2: Wish & Blow, 3: Card Pop-up
+            candles: [],
+            micActive: false,
+            audioStream: null,
+            audioContext: null,
+            analyser: null,
+            audioPlaying: false,
+            bgMusicCtx: null
+        };
+
+        const MAX_CANDLES = 12;
+        const candleColors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+        // DOM Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderGalleryPreview();
+        });
+
+        /* VIEW SWITCHER LOGIC */
+        function switchView(viewName) {
+            const creatorView = document.getElementById('creator-view');
+            const recipientView = document.getElementById('recipient-view');
+            const navCreatorBtn = document.getElementById('nav-creator-btn');
+            const navRecipientBtn = document.getElementById('nav-recipient-btn');
+
+            if (viewName === 'creator') {
+                creatorView.classList.remove('hidden');
+                recipientView.classList.add('hidden');
+
+                navCreatorBtn.className = "px-3 py-1.5 rounded-full transition-all text-pink-700 bg-white shadow-sm";
+                navRecipientBtn.className = "px-3 py-1.5 rounded-full transition-all text-gray-500 hover:text-pink-600";
+
+                document.body.classList.remove('dim-mode');
+                stopMicDetection();
+            } else {
+                creatorView.classList.add('hidden');
+                recipientView.classList.remove('hidden');
+
+                navRecipientBtn.className = "px-3 py-1.5 rounded-full transition-all text-pink-700 bg-white shadow-sm";
+                navCreatorBtn.className = "px-3 py-1.5 rounded-full transition-all text-gray-500 hover:text-pink-600";
+
+                loadRecipientDataFromConfig();
+            }
+        }
+
+        /* CREATOR: PHOTO & GALLERY HANDLERS */
+        function handleMainPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    config.mainPhoto = e.target.result;
+                    document.getElementById('cfg-main-preview').src = e.target.result;
+                    showToast('อัปเดตรูปภาพหลักแล้ว ✨');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleGalleryUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            files.forEach(file => {
+                if (config.gallery.length >= 4) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    config.gallery.push(e.target.result);
+                    renderGalleryPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+            showToast('เพิ่มรูปภาพแกลเลอรีเรียบร้อย');
+        }
+
+        function renderGalleryPreview() {
+            const container = document.getElementById('cfg-gallery-preview');
+            container.innerHTML = '';
+
+            config.gallery.forEach((imgSrc, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 group';
+                wrapper.innerHTML = `
+                    <img src="${imgSrc}" class="w-full h-full object-cover">
+                    <button onclick="removeGalleryImg(${idx})" class="absolute inset-0 bg-red-500/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs">✕</button>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        function removeGalleryImg(index) {
+            config.gallery.splice(index, 1);
+            renderGalleryPreview();
+        }
+
+        /* CREATOR: QR CODE GENERATOR */
+        function generateAndShowQR() {
+            saveCreatorFormInputs();
+
+            // Clear previous QR
+            const qrContainer = document.getElementById('qrcode-canvas');
+            qrContainer.innerHTML = '';
+
+            // Generate current page URL or fallback
+            const targetUrl = window.location.href.split('#')[0] + '?recipient=true';
+
+            new QRCode(qrContainer, {
+                text: targetUrl,
+                width: 180,
+                height: 180,
+                colorDark : "#db2777",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function saveCreatorFormInputs() {
+            config.title = document.getElementById('cfg-title').value.trim() || "Happy Birthday!";
+            config.message = document.getElementById('cfg-message').value.trim() || "";
+            
+            const rawCoupons = document.getElementById('cfg-coupons').value;
+            config.coupons = rawCoupons.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        }
+
+        function previewRecipientExperience() {
+            saveCreatorFormInputs();
+            switchView('recipient');
+            restartRecipientExperience();
+        }
+
+        /* RECIPIENT: INITIALIZE EXPERIENCE DATA */
+        function loadRecipientDataFromConfig() {
+            document.getElementById('card-display-title').innerText = config.title;
+            document.getElementById('card-display-message').innerText = config.message;
+            document.getElementById('card-display-main-photo').src = config.mainPhoto;
+
+            // Render Gallery if present
+            const gallerySec = document.getElementById('card-gallery-section');
+            const galleryGrid = document.getElementById('card-display-gallery');
+            galleryGrid.innerHTML = '';
+
+            if (config.gallery.length > 0) {
+                gallerySec.classList.remove('hidden');
+                config.gallery.forEach(imgSrc => {
+                    const imgEl = document.createElement('img');
+                    imgEl.src = imgSrc;
+                    imgEl.className = 'w-full h-16 object-cover rounded-lg border border-pink-100 shadow-sm';
+                    galleryGrid.appendChild(imgEl);
+                });
+            } else {
+                gallerySec.classList.add('hidden');
+            }
+        }
+
+        /* RECIPIENT STEP 1: CAKE CANDLE PLACEMENT */
+        function handleCakeClick(event) {
+            if (recipientState.step !== 1) return;
+
+            if (recipientState.candles.length >= MAX_CANDLES) {
+                showToast('ปักเทียนเต็มเค้กแล้วนะ! ✨');
+                return;
+            }
+
+            const area = document.getElementById('cake-interactive-area');
+            const rect = area.getBoundingClientRect();
+
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+            if (y < 18 || y > 55 || x < 20 || x > 80) {
+                showToast('จิ้มบริเวณด้านบนของเค้กเพื่อปักเทียนนะ 🎂');
+                return;
+            }
+
+            const candleId = 'candle-' + Date.now();
+            const color = candleColors[recipientState.candles.length % candleColors.length];
+
+            const candleData = { id: candleId, x: x, y: y, isLit: true };
+            recipientState.candles.push(candleData);
+
+            renderCandle(candleData, color);
+            updateCandleUI();
+            playPopSound();
+        }
+
+        function renderCandle(candle, color) {
+            const container = document.getElementById('candles-container');
+            const candleEl = document.createElement('div');
+            
+            candleEl.id = candle.id;
+            candleEl.className = 'absolute -translate-x-1/2 -translate-y-full flex flex-col items-center cursor-pointer group transition-transform duration-200';
+            candleEl.style.left = `${candle.x}%`;
+            candleEl.style.top = `${candle.y}%`;
+            
+            candleEl.innerHTML = `
+                <div class="flame-wrapper relative flex flex-col items-center mb-[2px]">
+                    <div class="flame w-3.5 h-5 bg-gradient-to-t from-amber-500 via-orange-400 to-yellow-200 rounded-full shadow-lg"></div>
+                </div>
+                <div class="w-2.5 h-10 rounded-sm shadow-sm relative overflow-hidden" style="background-color: ${color}">
+                    <div class="absolute inset-0 bg-white/20 w-1"></div>
+                </div>
+            `;
+
+            candleEl.onclick = (e) => {
+                e.stopPropagation();
+                if (recipientState.step === 2 && candle.isLit) {
+                    extinguishCandle(candle);
+                }
+            };
+
+            container.appendChild(candleEl);
+        }
+
+        function updateCandleUI() {
+            const count = recipientState.candles.length;
+            document.getElementById('candle-count-display').innerText = count;
+
+            const btnFinish = document.getElementById('btn-finish-candles');
+            if (count > 0) {
+                btnFinish.classList.remove('hidden');
+                setTimeout(() => {
+                    btnFinish.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnFinish.removeAttribute('disabled');
+                }, 50);
+            }
+        }
+
+        /* RECIPIENT STEP 2: PROCEED TO WISH & DIM LIGHTS */
+        function proceedToBlowStep() {
+            if (recipientState.candles.length === 0) return;
+
+            recipientState.step = 2;
+
+            // Turn on Dim Lights mode
+            document.body.classList.add('dim-mode');
+            
+            // Header updates for dark party mode
+            const headerTitle = document.getElementById('rec-header-title');
+            const headerSub = document.getElementById('rec-header-sub');
+
+            headerTitle.innerText = 'ตั้งจิตอธิษฐานสิ่งดีๆ 🔮✨';
+            headerTitle.className = 'text-2xl md:text-3xl font-extrabold text-amber-300 font-mali tracking-wide drop-shadow-md';
+
+            headerSub.innerText = 'ปิดไฟปาร์ตี้เพื่อเป่าเทียนอธิษฐาน...';
+            headerSub.className = 'text-slate-300 text-xs md:text-sm mt-1';
+
+            document.getElementById('btn-finish-candles').classList.add('hidden');
+            document.getElementById('blow-controls').classList.remove('hidden');
+
+            showToast('ปิดไฟปาร์ตี้แล้ว! เป่าเทียนได้เลย 🕯️');
+        }
+
+        /* CANDLE EXTINGUISH & BLOW LOGIC */
+        function extinguishCandle(candle) {
+            if (!candle.isLit) return;
+
+            candle.isLit = false;
+            const candleEl = document.getElementById(candle.id);
+            if (!candleEl) return;
+
+            const flameWrapper = candleEl.querySelector('.flame-wrapper');
+            if (flameWrapper) {
+                flameWrapper.style.display = 'none';
+                spawnSmoke(candleEl);
+                playBlowSound();
+            }
+
+            const remainingLit = recipientState.candles.filter(c => c.isLit).length;
+            if (remainingLit === 0) {
+                stopMicDetection();
+                setTimeout(triggerSuccessAndEnvelope, 700);
+            }
+        }
+
+        function blowAllCandles() {
+            if (recipientState.step !== 2) return;
+
+            recipientState.candles.forEach((c, index) => {
+                setTimeout(() => {
+                    extinguishCandle(c);
+                }, index * 120);
+            });
+        }
+
+        function spawnSmoke(parentEl) {
+            const smoke = document.createElement('div');
+            smoke.className = 'smoke';
+            parentEl.appendChild(smoke);
+            setTimeout(() => smoke.remove(), 1200);
+        }
+
+        /* MICROPHONE BLOW DETECTION LOGIC */
+        async function toggleMicrophoneBlow() {
+            if (recipientState.micActive) {
+                stopMicDetection();
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                recipientState.audioStream = stream;
+                
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                recipientState.audioContext = audioCtx;
+
+                const analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                recipientState.analyser = analyser;
+
+                const source = audioCtx.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                recipientState.micActive = true;
+                document.getElementById('mic-btn-text').innerText = 'กำลังฟังเสียงเป่า... 🎙️ (ดับเมื่อเป่า)';
+                document.getElementById('btn-mic-toggle').classList.add('animate-pulse', 'bg-emerald-600');
+
+                detectBlowLoop();
+                showToast('เป่าลมใส่ไมค์หน้าจอเพื่อดับเทียนได้เลย! 💨');
+            } catch (err) {
+                showToast('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณากดปุ่มเป่าแทน');
+            }
+        }
+
+        function detectBlowLoop() {
+            if (!recipientState.micActive || !recipientState.analyser) return;
+
+            const dataArray = new Uint8Array(recipientState.analyser.frequencyBinCount);
+            recipientState.analyser.getByteFrequencyData(dataArray);
+
+            // Calculate average volume level
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+
+            // Blow threshold check
+            if (average > 45) {
+                // Blow out one lit candle at a time
+                const litCandle = recipientState.candles.find(c => c.isLit);
+                if (litCandle) {
+                    extinguishCandle(litCandle);
+                }
+            }
+
+            if (recipientState.candles.some(c => c.isLit)) {
+                requestAnimationFrame(detectBlowLoop);
+            }
+        }
+
+        function stopMicDetection() {
+            if (recipientState.audioStream) {
+                recipientState.audioStream.getTracks().forEach(track => track.stop());
+            }
+            recipientState.micActive = false;
+            const micBtn = document.getElementById('btn-mic-toggle');
+            if (micBtn) {
+                micBtn.classList.remove('animate-pulse', 'bg-emerald-600');
+                document.getElementById('mic-btn-text').innerText = 'เปิดไมค์เพื่อเป่าจริง 🎙️';
+            }
+        }
+
+        /* RECIPIENT STEP 3: ENVELOPE & CONFETTI */
+        function triggerSuccessAndEnvelope() {
+            recipientState.step = 3;
+
+            // Play Happy Birthday Tune automatically
+            if (!recipientState.audioPlaying) {
+                toggleAudio();
+            }
+
+            launchConfetti();
+
+            const envelopeModal = document.getElementById('envelope-modal');
+            envelopeModal.classList.remove('pointer-events-none', 'opacity-0');
+            envelopeModal.classList.add('opacity-100');
+        }
+
+        function openGreetingCard() {
+            const envelopeCard = document.getElementById('envelope-card');
+            envelopeCard.classList.add('envelope-open');
+
+            playPopSound();
+
+            setTimeout(() => {
+                const envelopeModal = document.getElementById('envelope-modal');
+                envelopeModal.classList.add('opacity-0');
+
+                setTimeout(() => {
+                    envelopeModal.classList.add('pointer-events-none');
+                    
+                    const cardModal = document.getElementById('card-modal');
+                    const cardContent = document.getElementById('card-content');
+                    
+                    cardModal.classList.remove('pointer-events-none', 'opacity-0');
+                    cardModal.classList.add('opacity-100');
+                    
+                    cardContent.classList.remove('scale-90');
+                    cardContent.classList.add('scale-100');
+
+                    launchConfetti();
+                }, 300);
+            }, 800);
+        }
+
+        /* SURPRISE COUPON DRAW */
+        function drawSurpriseCoupon() {
+            const resultText = document.getElementById('coupon-result-text');
+            const coupons = config.coupons;
+
+            if (!coupons || coupons.length === 0) {
+                resultText.innerText = "คูปองความสุขไม่จำกัด! 💕";
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * coupons.length);
+            const prize = coupons[randomIndex];
+
+            resultText.className = "text-base font-bold text-pink-600 font-mali my-1 animate-bounce";
+            resultText.innerText = `คุณได้รับ: ${prize} 🎉`;
+
+            playPopSound();
+            launchConfetti();
+        }
+
+        /* RESTART RECIPIENT EXPERIENCE */
+        function restartRecipientExperience() {
+            recipientState.step = 1;
+            recipientState.candles = [];
+
+            document.body.classList.remove('dim-mode');
+            stopMicDetection();
+
+            document.getElementById('candles-container').innerHTML = '';
+            document.getElementById('candle-count-display').innerText = '0';
+
+            const headerTitle = document.getElementById('rec-header-title');
+            const headerSub = document.getElementById('rec-header-sub');
+            headerTitle.innerText = 'Happy Birthday! 🎂✨';
+            headerTitle.className = 'text-2xl md:text-3xl font-extrabold text-pink-600 font-mali tracking-wide drop-shadow-sm';
+            headerSub.innerText = 'จิ้มหน้าจอที่ตัวเค้กเพื่อปักเทียนวันเกิด 🕯️';
+            headerSub.className = 'text-gray-600 text-xs md:text-sm mt-1';
+
+            document.getElementById('btn-finish-candles').classList.add('hidden', 'opacity-50', 'cursor-not-allowed');
+            document.getElementById('btn-finish-candles').setAttribute('disabled', 'true');
+            document.getElementById('blow-controls').classList.add('hidden');
+
+            document.getElementById('card-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('card-content').classList.remove('scale-100');
+            document.getElementById('card-content').classList.add('scale-90');
+
+            document.getElementById('envelope-card').classList.remove('envelope-open');
+
+            document.getElementById('coupon-result-text').innerText = "กดปุ่มด้านล่างเพื่อสุ่มคูปอง! ✨";
+
+            showToast('เริ่มใหม่อีกครั้งแล้ว ✨');
+        }
+
+        /* UTILITY: CONFETTI & SOUNDS */
+        function launchConfetti() {
+            confetti({
+                particleCount: 120,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function playPopSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(850, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch (e) {}
+        }
+
+        function playBlowSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = ctx.sampleRate * 0.12;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 350;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+            } catch (e) {}
+        }
+
+        /* BACKGROUND TUNE TOGGLE */
+        let tuneInterval = null;
+        function toggleAudio() {
+            recipientState.audioPlaying = !recipientState.audioPlaying;
+            const btn = document.getElementById('audio-toggle-btn');
+
+            if (recipientState.audioPlaying) {
+                btn.classList.add('bg-pink-500', 'text-white');
+                playHappyBirthdayTune();
+                showToast('เปิดเพลงวันเกิด 🎵');
+            } else {
+                btn.classList.remove('bg-pink-500', 'text-white');
+                if (tuneInterval) clearInterval(tuneInterval);
+                showToast('ปิดเพลงแล้ว 🔇');
+            }
+        }
+
+        function playHappyBirthdayTune() {
+            const notes = [
+                { note: 261.63, duration: 0.25 }, { note: 261.63, duration: 0.25 },
+                { note: 293.66, duration: 0.5 }, { note: 261.63, duration: 0.5 },
+                { note: 349.23, duration: 0.5 }, { note: 329.63, duration: 0.8 },
+            ];
+
+            let index = 0;
+            tuneInterval = setInterval(() => {
+                if (!recipientState.audioPlaying) return;
+                const current = notes[index];
+                playTone(current.note, current.duration);
+                index = (index + 1) % notes.length;
+            }, 650);
+        }
+
+        function playTone(freq, duration) {
+            try {
+                if (!recipientState.bgMusicCtx) {
+                    recipientState.bgMusicCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const ctx = recipientState.bgMusicCtx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        /* TOAST HELPER */
+        let toastTimeout;
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = text;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
