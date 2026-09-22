@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday! 🎂✨</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7e2 50%, #e9d5ff 100%);
+            min-height: 100vh;
+        }
+        .font-mali {
+            font-family: 'Mali', cursive;
+        }
+
+        /* Candle Flame Flickering Animation */
+        @keyframes flameFlicker {
+            0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
+            20% { transform: scale(1.1, 0.95) rotate(2deg); opacity: 1; }
+            40% { transform: scale(0.9, 1.05) rotate(-2deg); opacity: 0.9; }
+            60% { transform: scale(1.05, 1) rotate(1deg); opacity: 1; }
+            80% { transform: scale(0.95, 1.1) rotate(-1deg); opacity: 0.85; }
+        }
+        .flame-anim {
+            transform-origin: bottom center;
+            animation: flameFlicker 0.6s infinite ease-in-out;
+            filter: drop-shadow(0px 0px 8px #f6ad55);
+        }
+
+        /* Floating Animation */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-anim {
+            animation: floatSlow 3s infinite ease-in-out;
+        }
+
+        /* Envelope Popup Animation */
+        @keyframes popupEnvelope {
+            0% { transform: scale(0.3) translateY(100px); opacity: 0; }
+            70% { transform: scale(1.05) translateY(-10px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .envelope-popup {
+            animation: popupEnvelope 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Card Unfold Effect */
+        .card-perspective {
+            perspective: 1000px;
+        }
+        .card-inner {
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Pulse glow */
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.8); }
+        }
+        .glow-button {
+            animation: glowPulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased relative selection:bg-pink-300 selection:text-pink-900 min-h-screen flex flex-col">
+
+<!-- Header Bar -->
+<header class="w-full bg-white/70 backdrop-blur-md sticky top-0 z-40 border-b border-pink-100 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🎉</span>
+            <span class="font-bold text-lg text-pink-600 font-mali">HBD Special Gift</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="viewToggleBtn" onclick="toggleViewMode()" class="px-3 py-1.5 text-xs sm:text-sm bg-pink-100 hover:bg-pink-200 text-pink-700 font-semibold rounded-full transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-gear">
+                </i>
+                <span id="viewToggleText">หน้าหลังบ้าน (สร้างการ์ด)</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-4xl mx-auto w-full p-4 flex flex-col items-center justify-center relative">
+
+    <!-- ========================================================================= -->
+    <!-- RECIPIENT VIEW (หน้าผู้รับ - เพื่อนเป่าเค้ก) -->
+    <!-- ========================================================================= -->
+    <div id="recipientView" class="w-full flex flex-col items-center justify-center space-y-6 my-auto py-6">
+
+        <!-- Header Greeting -->
+        <div class="text-center space-y-2">
+            <div class="inline-block bg-pink-100 text-pink-700 px-4 py-1 rounded-full text-sm font-semibold tracking-wide uppercase shadow-sm">
+                🎂 Happy Birthday!
+            </div>
+            <h1 id="friendTitle" class="text-3xl sm:text-5xl font-bold font-mali text-pink-600 drop-shadow-sm">
+                สุขสันต์วันเกิดนะ! ✨
+            </h1>
+            <p id="instructionText" class="text-base sm:text-lg text-slate-600 font-medium animate-pulse">
+                👇 จิ้มที่ตัวเค้กเพื่อปักเทียนวันเกิดให้ครบ 3 เล่ม!
+            </p>
+        </div>
+
+        <!-- Interactive 2-Tier Strawberry Cake Canvas / SVG Container -->
+        <div class="relative cursor-pointer group my-4 flex justify-center" onclick="handleCakeClick(event)">
+            <!-- Interactive Cake SVG matched with reference picture design -->
+            <svg id="cakeSvg" width="280" height="300" viewBox="0 0 280 300" class="drop-shadow-xl transition-transform transform group-hover:scale-105 duration-300">
+                
+                <!-- Plate / Dish Base -->
+                <ellipse cx="140" cy="270" rx="130" ry="22" fill="#ffffff" stroke="#cbd5e1" stroke-width="3" />
+                <ellipse cx="140" cy="270" rx="122" ry="16" fill="#f1f5f9" />
+
+                <!-- Bottom Tier Cake Base (Yellow) -->
+                <rect x="35" y="170" width="210" height="90" rx="10" fill="#fef08a" stroke="#334155" stroke-width="3" />
+                
+                <!-- Bottom Tier Blue Stripe -->
+                <rect x="36" y="215" width="208" height="15" fill="#bae6fd" stroke="#334155" stroke-width="2" />
+
+                <!-- Bottom Tier Pink Cream Drip Top -->
+                <path d="M35 170 C50 195, 65 190, 80 170 C95 195, 110 195, 125 170 C140 195, 155 195, 170 170 C185 195, 200 195, 215 170 C230 195, 240 180, 245 170 L245 195 Q245 200 240 200 L40 200 Q35 200 35 195 Z" fill="#fbcfe8" stroke="#334155" stroke-width="3" />
+
+                <!-- Strawberries Decorating the Rim Between Tiers -->
+                <g id="strawberries">
+                    <!-- Strawberry 1 -->
+                    <path d="M 45 160 Q 55 145 65 160 Q 55 175 45 160 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 52 147 L 55 142 L 58 147 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 2 -->
+                    <path d="M 75 162 Q 85 147 95 162 Q 85 177 75 162 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 82 149 L 85 144 L 88 149 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 3 -->
+                    <path d="M 105 163 Q 115 148 125 163 Q 115 178 105 163 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 112 150 L 115 145 L 118 150 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 4 -->
+                    <path d="M 135 163 Q 145 148 155 163 Q 145 178 135 163 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 142 150 L 145 145 L 148 150 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 5 -->
+                    <path d="M 165 163 Q 175 148 185 163 Q 175 178 165 163 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 172 150 L 175 145 L 178 150 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 6 -->
+                    <path d="M 195 162 Q 205 147 215 162 Q 205 177 195 162 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 202 149 L 205 144 L 208 149 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Strawberry 7 -->
+                    <path d="M 220 160 Q 230 145 240 160 Q 230 175 220 160 Z" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                    <path d="M 227 147 L 230 142 L 233 147 Z" fill="#22c55e" stroke="#334155" stroke-width="1.5"/>
+                </g>
+
+                <!-- Top Tier Cake Base (Yellow) -->
+                <rect x="70" y="90" width="140" height="70" rx="8" fill="#fef08a" stroke="#334155" stroke-width="3" />
+
+                <!-- Top Tier Blue Stripe -->
+                <rect x="71" y="125" width="138" height="12" fill="#bae6fd" stroke="#334155" stroke-width="2" />
+
+                <!-- Top Tier Pink Cream Drip Top -->
+                <path d="M70 90 C80 110, 95 110, 105 90 C115 110, 130 110, 140 90 C150 110, 165 110, 175 90 C185 110, 198 105, 210 90 L210 110 Q210 115 205 115 L75 115 Q70 115 70 110 Z" fill="#fbcfe8" stroke="#334155" stroke-width="3" />
+
+                <!-- Top Cake Surface -->
+                <ellipse cx="140" cy="90" rx="70" ry="15" fill="#fbcfe8" stroke="#334155" stroke-width="3" />
+
+                <!-- Dynamic Candle Group -->
+                <g id="candlesGroup">
+                    <!-- Candle 1 (Left) -->
+                    <g id="candle1" class="hidden">
+                        <rect x="100" y="45" width="14" height="42" rx="3" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                        <!-- Yellow stripes on candle -->
+                        <path d="M100 50 L114 55 M100 62 L114 67 M100 74 L114 79" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round" />
+                        <!-- Wick -->
+                        <line x1="107" y1="45" x2="107" y2="38" stroke="#334155" stroke-width="2" />
+                        <!-- Flame -->
+                        <g id="flame1" class="flame-anim">
+                            <path d="M 107 18 Q 116 28 107 38 Q 98 28 107 18 Z" fill="#f97316" stroke="#ea580c" stroke-width="1.5" />
+                            <path d="M 107 24 Q 112 30 107 36 Q 102 30 107 24 Z" fill="#fef08a" />
+                        </g>
+                    </g>
+
+                    <!-- Candle 2 (Middle) -->
+                    <g id="candle2" class="hidden">
+                        <rect x="133" y="45" width="14" height="42" rx="3" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                        <!-- Yellow stripes on candle -->
+                        <path d="M133 50 L147 55 M133 62 L147 67 M133 74 L147 79" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round" />
+                        <!-- Wick -->
+                        <line x1="140" y1="45" x2="140" y2="38" stroke="#334155" stroke-width="2" />
+                        <!-- Flame -->
+                        <g id="flame2" class="flame-anim">
+                            <path d="M 140 18 Q 149 28 140 38 Q 131 28 140 18 Z" fill="#f97316" stroke="#ea580c" stroke-width="1.5" />
+                            <path d="M 140 24 Q 145 30 140 36 Q 135 30 140 24 Z" fill="#fef08a" />
+                        </g>
+                    </g>
+
+                    <!-- Candle 3 (Right) -->
+                    <g id="candle3" class="hidden">
+                        <rect x="166" y="45" width="14" height="42" rx="3" fill="#ef4444" stroke="#334155" stroke-width="2"/>
+                        <!-- Yellow stripes on candle -->
+                        <path d="M166 50 L180 55 M166 62 L180 67 M166 74 L180 79" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round" />
+                        <!-- Wick -->
+                        <line x1="173" y1="45" x2="173" y2="38" stroke="#334155" stroke-width="2" />
+                        <!-- Flame -->
+                        <g id="flame3" class="flame-anim">
+                            <path d="M 173 18 Q 182 28 173 38 Q 164 28 173 18 Z" fill="#f97316" stroke="#ea580c" stroke-width="1.5" />
+                            <path d="M 173 24 Q 178 30 173 36 Q 168 30 173 24 Z" fill="#fef08a" />
+                        </g>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Action Control Buttons -->
+        <div id="candleActionControls" class="flex flex-col items-center gap-3 w-full max-w-sm">
+            <button id="addCandleBtn" onclick="addNextCandle()" class="w-full py-3 px-6 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl shadow-lg transition duration-200 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg">
+                <span>🕯️ ปักเทียนบนเค้ก (<span id="candleCountText">0</span>/3)</span>
+            </button>
+
+            <button id="blowCandleBtn" onclick="blowOutCandles()" class="hidden w-full py-3.5 px-6 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl shadow-xl transition duration-200 transform hover:scale-105 glow-button flex items-center justify-center gap-2 text-xl font-mali">
+                <span>💨 หลับตาอธิษฐานแล้ว "จิ้มเป่าเทียน"</span>
+            </button>
+        </div>
+
+        <!-- Pop-up Birthday Card Envelope Section (Appears after blowing candles) -->
+        <div id="envelopeSection" class="hidden w-full max-w-md mx-auto my-4 text-center">
+            <div id="envelopeContainer" class="envelope-popup bg-white p-6 rounded-3xl shadow-2xl border-2 border-pink-200 flex flex-col items-center space-y-4 relative overflow-hidden">
+                <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-pink-500 text-3xl float-anim shadow-inner">
+                    💌
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold font-mali text-pink-600">มีซองการ์ดอวยพรส่งถึงคุณ!</h2>
+                    <p class="text-sm text-slate-500 mt-1">คลิกเปิดเพื่ออ่านคำอวยพร ฟังเพลง และสุ่มของขวัญพิเศษ</p>
+                </div>
+                <button onclick="openBirthdayCardModal()" class="py-3 px-8 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold rounded-full shadow-lg transition duration-200 transform hover:scale-105 flex items-center gap-2">
+                    <i class="fa-solid fa-envelope-open-text"></i> เปิดซองการ์ดอวยพร ✨
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SENDER / ADMIN DASHBOARD VIEW (หน้าหลังบ้าน - สำหรับผู้สร้างการ์ด) -->
+    <!-- ========================================================================= -->
+    <div id="adminView" class="hidden w-full max-w-2xl bg-white/90 backdrop-blur-md p-6 sm:p-8 rounded-3xl shadow-xl border border-pink-100 my-6 space-y-6">
+        
+        <div class="border-b border-pink-100 pb-4 flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold font-mali text-pink-600 flex items-center gap-2">
+                    <span>🛠️</span> ตั้งค่าการ์ดวันเกิดให้เพื่อน
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">กรอกข้อมูลคำอวยพร รูปภาพ เพลง และคูปอง แล้วสร้าง QR Code / ลิงก์ส่งให้เพื่อนได้เลย!</p>
+            </div>
+            <span class="bg-pink-100 text-pink-600 text-xs font-bold px-2.5 py-1 rounded-lg">Admin Mode</span>
+        </div>
+
+        <form id="adminForm" onsubmit="saveCardSettings(event)" class="space-y-5">
+            <!-- Friend Name -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อเพื่อน / เจ้าของวันเกิด <span class="text-rose-500">*</span></label>
+                <input type="text" id="adminFriendName" required placeholder="เช่น น้องแป้ง, Bestie, พี่นัท" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
+            </div>
+
+            <!-- Birthday Wish Message -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">คำอวยพรวันเกิด <span class="text-rose-500">*</span></label>
+                <textarea id="adminWishMessage" rows="4" required placeholder="เขียนคำอวยพรซึ้งๆ หรือกวนๆ ให้เพื่อนตรงนี้..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"></textarea>
+            </div>
+
+            <!-- Image URL -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">URL รูปถ่ายเพื่อน (รูปประกอบในการ์ด)</label>
+                <input type="url" id="adminPhotoUrl" placeholder="https://images.unsplash.com/photo-1513151233558-d860c5398176" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
+                <p class="text-xs text-slate-400 mt-1">ใส่อิเมจ URL รูปเพื่อน หรือปล่อยว่างไว้ใช้รูปเริ่มต้น</p>
+            </div>
+
+            <!-- Spotify Song Link or Track ID -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">ลิงก์เพลง หรือ Track ID จาก Spotify</label>
+                <input type="text" id="adminSpotifyInput" placeholder="https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT หรือ 4cOdK2wGLETKBW3PvgPWqT" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
+                <p class="text-xs text-slate-400 mt-1">นำคัดลอก Share Link ของเพลงใน Spotify มาวางได้เลย</p>
+            </div>
+
+            <!-- Coupons Configuration -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">รายการคูปองของขวัญสำหรับสุ่ม (คั่นด้วยเครื่องหมายจุลภาค ,)</label>
+                <textarea id="adminCouponsInput" rows="3" placeholder="เลี้ยงชานมไข่มุก 1 แก้ว, พาไปกินหมูกระทะ, ยอมทำตามใจ 1 วัน, เลี้ยงกาแฟ STARBUCKS" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg">
+                <i class="fa-solid fa-floppy-disk"></i> บันทึกและสร้างลิงก์วันเกิด
+            </button>
+        </form>
+
+        <!-- Output Share & QR Code Area -->
+        <div id="shareResultArea" class="hidden bg-pink-50 border border-pink-200 p-5 rounded-2xl space-y-4">
+            <h3 class="font-bold text-pink-700 text-lg flex items-center gap-2">
+                <span>🎉</span> การ์ดอวยพรสร้างเสร็จสมบูรณ์!
+            </h3>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-pink-100 shadow-sm">
+                <!-- QR Code Box -->
+                <div id="qrcode" class="p-2 bg-white rounded-lg border shadow-sm flex-shrink-0"></div>
+                
+                <div class="space-y-2 w-full">
+                    <p class="text-xs text-slate-500 font-semibold">ส่งลิงก์นี้ให้เพื่อนผู้รับเปิดบนมือถือ:</p>
+                    <input type="text" id="shareUrlInput" readonly class="w-full px-3 py-1.5 bg-slate-100 text-xs font-mono rounded border text-slate-700 select-all">
+                    <div class="flex gap-2">
+                        <button onclick="copyShareUrl()" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
+                        </button>
+                        <button onclick="previewRecipientCard()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye"></i> ทดลองดูหน้าผู้รับ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<!-- BIRTHDAY CARD MODAL (Opened from Envelope) -->
+<div id="birthdayCardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88vh] overflow-y-auto p-6 sm:p-8 shadow-2xl border-4 border-pink-200 relative transform transition-all duration-300 scale-95 opacity-0 text-center space-y-5" id="cardModalContent">
+        
+        <!-- Close Modal Button -->
+        <button onclick="closeBirthdayCardModal()" class="sticky top-0 right-0 float-right z-10 w-9 h-9 bg-slate-100 hover:bg-pink-100 text-slate-500 hover:text-pink-600 rounded-full flex items-center justify-center transition shadow-sm">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <!-- Cute Floating Decorative Badges -->
+        <div class="text-4xl animate-bounce pt-2">💌</div>
+
+        <h2 id="modalRecipientTitle" class="text-3xl font-bold font-mali text-pink-600">
+            Happy Birthday!
+        </h2>
+
+        <!-- Card Image -->
+        <div class="w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-md bg-pink-50 border-2 border-pink-100 relative group">
+            <img id="modalPhotoImg" src="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80" alt="Birthday Friend" class="w-full h-full object-cover transition transform group-hover:scale-105 duration-500" onerror="this.src='https://placehold.co/600x400/fbcfe8/be185d?text=Happy+Birthday!';">
+        </div>
+
+        <!-- Birthday Message Text Box -->
+        <div class="bg-pink-50/80 p-4 rounded-2xl border border-pink-100 text-slate-700 text-sm sm:text-base leading-relaxed text-left whitespace-pre-line font-mali max-h-48 overflow-y-auto shadow-inner">
+            <p id="modalWishText">ขอให้มีความสุขมากๆ สุขภาพแข็งแรง มีรอยยิ้มสดใสในทุกๆ วัน และขอให้สมหวังในทุกสิ่งที่ตั้งใจนะ!</p>
+        </div>
+
+        <!-- Spotify Music Player Widget Inside Envelope -->
+        <div id="spotifyPlayerContainer" class="w-full bg-slate-50 p-3.5 rounded-2xl shadow-sm border border-pink-100 flex flex-col items-center space-y-2">
+            <div class="flex items-center gap-2 text-emerald-600 font-semibold text-xs sm:text-sm">
+                <i class="fa-brands fa-spotify text-lg"></i>
+                <span>เพลงประกอบวันเกิด (Spotify)</span>
+            </div>
+            <div id="spotifyIframeWrapper" class="w-full rounded-xl overflow-hidden shadow-inner bg-slate-100 h-[80px] flex items-center justify-center">
+                <!-- Spotify Iframe dynamically loaded -->
+                <p class="text-xs text-slate-400">กำลังโหลดเพลง...</p>
+            </div>
+        </div>
+
+        <!-- Birthday Coupon Randomizer / Gacha Section Inside Envelope -->
+        <div id="couponGachaSection" class="w-full bg-gradient-to-br from-purple-500 to-pink-500 text-white p-5 rounded-2xl shadow-lg space-y-3 text-center relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-7xl opacity-10 pointer-events-none">🎁</div>
+            <div class="space-y-1">
+                <span class="bg-white/20 text-white text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase font-bold tracking-wider">Birthday Coupon Spin</span>
+                <h3 class="text-xl font-bold font-mali">สุ่มคูปองของขวัญวันเกิด! ✨</h3>
+                <p class="text-[11px] text-pink-100">ผู้รับสามารถสุ่มรับคูปองได้เพียง 1 ครั้งเท่านั้นนะ</p>
+            </div>
+
+            <!-- Coupon Prize Result Display -->
+            <div id="couponResultBox" class="bg-white text-slate-800 p-4 rounded-xl shadow-inner min-h-[90px] flex flex-col items-center justify-center transition-all duration-300">
+                <span class="text-3xl mb-1">🎟️</span>
+                <p id="couponResultText" class="font-bold text-base text-purple-700 font-mali">กดปุ่มสุ่มคูปองด้านล่างเพื่อรับของขวัญ!</p>
+            </div>
+
+            <button id="spinCouponBtn" onclick="spinBirthdayCoupon()" class="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-base rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-dice"></i> สุ่มคูปองวันเกิด!
+            </button>
+        </div>
+
+        <button onclick="closeBirthdayCardModal()" class="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl shadow-lg transition text-base">
+            ❤️ ขอบคุณนะ! (ปิดการ์ด)
+        </button>
+
+    </div>
+</div>
+
+<!-- Custom Notification Toast -->
+<div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 text-sm font-semibold">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">แจ้งเตือน</span>
+</div>
+
+<script>
+    /* =========================================================================
+       APPLICATION STATE & CONFIGURATION
+       ========================================================================= */
+    const DEFAULT_CONFIG = {
+        friendName: "เพื่อนสุดที่รัก",
+        wishMessage: "สุขสันต์วันเกิดนะ! 🎉 ขอให้ปีนี้เป็นปีที่ดีมากๆ มีความสุขในทุกๆ วัน สมหวังทุกความปรารถนา สุขภาพร่างกายแข็งแรง ประสบความสำเร็จในทุกๆ เรื่อง และมีรอยยิ้มที่สดใสเสมอนะ!",
+        photoUrl: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
+        spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT", // Default Spotify Track ID
+        coupons: [
+            "🧋 เลี้ยงชาไข่มุก 1 แก้วเต็มๆ",
+            "🍲 พาไปกินหมูกระทะ / ชาบู 1 มื้อ",
+            "☕ เลี้ยงกาแฟ Starbucks 1 เมนู",
+            "👑 ยอมฟังและทำตามใจ 1 วันเต็ม",
+            "🍿 พาไปดูหนังเรื่องที่อยากดู 1 เรื่อง",
+            "🍕 เลี้ยงพิซซ่าถาดใหญ่ 1 ถาด"
+        ]
+    };
+
+    let cardConfig = { ...DEFAULT_CONFIG };
+    let candlesPlaced = 0;
+    const MAX_CANDLES = 3;
+    let isBlownOut = false;
+    let hasSpunCoupon = false;
+
+    /* =========================================================================
+       INITIALIZATION
+       ========================================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+        loadDataFromUrlOrStorage();
+        updateRecipientUI();
+        initSpotifyPlayer();
+    });
+
+    // Parse Config from URL Hash or Search Params
+    function loadDataFromUrlOrStorage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get('cardData');
+
+        if (dataParam) {
+            try {
+                const decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
+                cardConfig = { ...DEFAULT_CONFIG, ...decoded };
+            } catch (e) {
+                console.error("Error decoding card data from URL:", e);
+            }
+        } else {
+            // Check LocalStorage if present
+            const local = localStorage.getItem('hbd_card_config');
+            if (local) {
+                try {
+                    cardConfig = { ...DEFAULT_CONFIG, ...JSON.parse(local) };
+                } catch(e) {}
+            }
+        }
+
+        // Check if coupon already spun in this browser
+        if (localStorage.getItem('hbd_coupon_spun_' + (cardConfig.friendName || 'default'))) {
+            hasSpunCoupon = true;
+            const savedPrize = localStorage.getItem('hbd_coupon_prize_' + (cardConfig.friendName || 'default'));
+            if (savedPrize) {
+                renderSpunCoupon(savedPrize);
+            }
+        }
+    }
+
+    // Render Spotify Iframe based on Track ID or Link
+    function initSpotifyPlayer() {
+        const wrapper = document.getElementById('spotifyIframeWrapper');
+        let trackId = cardConfig.spotifyTrackId || DEFAULT_CONFIG.spotifyTrackId;
+
+        // Clean track ID if full URL passed
+        if (trackId.includes('spotify.com/track/')) {
+            const matches = trackId.match(/track\/([a-zA-Z0-9]+)/);
+            if (matches && matches[1]) {
+                trackId = matches[1];
+            }
+        }
+
+        wrapper.innerHTML = `
+            <iframe src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0" 
+                    width="100%" 
+                    height="80" 
+                    frameBorder="0" 
+                    allowfullscreen="" 
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                    loading="lazy">
+            </iframe>
+        `;
+    }
+
+    // Update UI elements for recipient
+    function updateRecipientUI() {
+        document.getElementById('friendTitle').innerText = `สุขสันต์วันเกิดนะ ${cardConfig.friendName}! ✨`;
+        document.getElementById('modalRecipientTitle').innerText = `Happy Birthday ${cardConfig.friendName}! ✨`;
+        document.getElementById('modalWishText').innerText = cardConfig.wishMessage;
+        
+        if (cardConfig.photoUrl) {
+            document.getElementById('modalPhotoImg').src = cardConfig.photoUrl;
+        }
+    }
+
+    // Handle Cake Click to add candles
+    function handleCakeClick(e) {
+        if (candlesPlaced < MAX_CANDLES) {
+            addNextCandle();
+        } else if (!isBlownOut) {
+            blowOutCandles();
+        }
+    }
+
+    // Add Candle sequentially
+    function addNextCandle() {
+        if (candlesPlaced >= MAX_CANDLES) return;
+
+        candlesPlaced++;
+        document.getElementById(`candle${candlesPlaced}`).classList.remove('hidden');
+        document.getElementById('candleCountText').innerText = candlesPlaced;
+
+        // Trigger confetti pop on candle placement
+        confetti({
+            particleCount: 15,
+            spread: 40,
+            origin: { y: 0.6 }
+        });
+
+        if (candlesPlaced === MAX_CANDLES) {
+            document.getElementById('addCandleBtn').classList.add('hidden');
+            document.getElementById('blowCandleBtn').classList.remove('hidden');
+            document.getElementById('instructionText').innerText = "✨ ปักเทียนครบแล้ว! หลับตาอธิษฐานแล้วจิ้มเป่าเทียนได้เลย!";
+            showToast("🕯️ ปักเทียนเรียบร้อยแล้ว!", "🎉");
+        } else {
+            showToast(`🕯️ ปักเทียนเล่มที่ ${candlesPlaced} แล้ว!`, "✨");
+        }
+    }
+
+    // Blow Out Candles Function
+    function blowOutCandles() {
+        if (isBlownOut) return;
+        isBlownOut = true;
+
+        // Hide Candle Flames
+        document.getElementById('flame1').classList.add('hidden');
+        document.getElementById('flame2').classList.add('hidden');
+        document.getElementById('flame3').classList.add('hidden');
+
+        document.getElementById('blowCandleBtn').classList.add('hidden');
+        document.getElementById('instructionText').innerText = "🥳 เย้! ขอให้คำอธิษฐานของคุณเป็นจริงนะ!";
+
+        // Trigger Big Celebration Confetti
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+            confetti({
+                particleCount: 40,
+                startVelocity: 30,
+                spread: 360,
+                origin: { x: Math.random(), y: Math.random() - 0.2 }
+            });
+        }, 250);
+
+        // Show Envelope Card Section with delay
+        setTimeout(() => {
+            const envSec = document.getElementById('envelopeSection');
+            envSec.classList.remove('hidden');
+            envSec.scrollIntoView({ behavior: 'smooth' });
+            showToast("💌 มีการ์ดอวยพรเด้งขึ้นมา!", "🎁");
+        }, 1200);
+    }
+
+    // Open Birthday Card Modal
+    function openBirthdayCardModal() {
+        const modal = document.getElementById('birthdayCardModal');
+        const modalContent = document.getElementById('cardModalContent');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 50);
+
+        // Burst extra confetti
+        confetti({
+            particleCount: 50,
+            spread: 70,
+            origin: { y: 0.5 }
+        });
+    }
+
+    // Close Modal
+    function closeBirthdayCardModal() {
+        const modal = document.getElementById('birthdayCardModal');
+        const modalContent = document.getElementById('cardModalContent');
+
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    // Spin Birthday Coupon (1 time limit)
+    function spinBirthdayCoupon() {
+        if (hasSpunCoupon) {
+            showToast("คุณสุ่มรับคูปองวันเกิดไปแล้ว 1 ครั้งนะ!", "⚠️");
+            return;
+        }
+
+        const btn = document.getElementById('spinCouponBtn');
+        const resultBox = document.getElementById('couponResultBox');
+        const resultText = document.getElementById('couponResultText');
+
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        const couponList = cardConfig.coupons && cardConfig.coupons.length > 0 
+            ? cardConfig.coupons 
+            : DEFAULT_CONFIG.coupons;
+
+        let spinCount = 0;
+        const maxSpins = 20;
+        
+        const spinInterval = setInterval(() => {
+            const randomIndex = Math.floor(Math.random() * couponList.length);
+            resultText.innerText = couponList[randomIndex];
+            spinCount++;
+
+            if (spinCount >= maxSpins) {
+                clearInterval(spinInterval);
+                const finalPrize = couponList[Math.floor(Math.random() * couponList.length)];
+                
+                // Mark as Spun
+                hasSpunCoupon = true;
+                localStorage.setItem('hbd_coupon_spun_' + (cardConfig.friendName || 'default'), 'true');
+                localStorage.setItem('hbd_coupon_prize_' + (cardConfig.friendName || 'default'), finalPrize);
+
+                renderSpunCoupon(finalPrize);
+
+                confetti({
+                    particleCount: 80,
+                    spread: 80,
+                    origin: { y: 0.8 }
+                });
+
+                showToast("🎉 ยินดีด้วย! คุณได้รับคูปองวันเกิดแล้ว!", "🎟️");
+            }
+        }, 100);
+    }
+
+    function renderSpunCoupon(prizeText) {
+        const resultText = document.getElementById('couponResultText');
+        const btn = document.getElementById('spinCouponBtn');
+
+        resultText.innerHTML = `
+            <span class="text-xs text-pink-500 uppercase font-bold block mb-1">ยินดีด้วย! คุณได้รับคูปอง:</span>
+            <span class="text-xl text-purple-800 font-bold font-mali">${prizeText}</span>
+        `;
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        btn.innerText = "✅ ใช้สิทธิ์สุ่มคูปองแล้ว";
+    }
+
+    // Toggle View Mode (Recipient <-> Admin)
+    function toggleViewMode() {
+        const recipientView = document.getElementById('recipientView');
+        const adminView = document.getElementById('adminView');
+        const toggleText = document.getElementById('viewToggleText');
+
+        if (adminView.classList.contains('hidden')) {
+            // Switch to Admin
+            recipientView.classList.add('hidden');
+            adminView.classList.remove('hidden');
+            toggleText.innerText = "หน้าผู้รับ (เพื่อนเป่าเค้ก)";
+            populateAdminForm();
+        } else {
+            // Switch to Recipient
+            adminView.classList.add('hidden');
+            recipientView.classList.remove('hidden');
+            toggleText.innerText = "หน้าหลังบ้าน (สร้างการ์ด)";
+        }
+    }
+
+    // Populate Admin Form Fields
+    function populateAdminForm() {
+        document.getElementById('adminFriendName').value = cardConfig.friendName || '';
+        document.getElementById('adminWishMessage').value = cardConfig.wishMessage || '';
+        document.getElementById('adminPhotoUrl').value = cardConfig.photoUrl || '';
+        document.getElementById('adminSpotifyInput').value = cardConfig.spotifyTrackId || '';
+        document.getElementById('adminCouponsInput').value = (cardConfig.coupons || DEFAULT_CONFIG.coupons).join(', ');
+    }
+
+    // Save Settings & Generate Share URL + QR Code
+    function saveCardSettings(e) {
+        e.preventDefault();
+
+        const friendName = document.getElementById('adminFriendName').value.trim();
+        const wishMessage = document.getElementById('adminWishMessage').value.trim();
+        const photoUrl = document.getElementById('adminPhotoUrl').value.trim();
+        const spotifyInput = document.getElementById('adminSpotifyInput').value.trim();
+        const couponsRaw = document.getElementById('adminCouponsInput').value.trim();
+
+        const couponsArray = couponsRaw 
+            ? couponsRaw.split(',').map(c => c.trim()).filter(c => c.length > 0)
+            : DEFAULT_CONFIG.coupons;
+
+        cardConfig = {
+            friendName,
+            wishMessage,
+            photoUrl: photoUrl || DEFAULT_CONFIG.photoUrl,
+            spotifyTrackId: spotifyInput || DEFAULT_CONFIG.spotifyTrackId,
+            coupons: couponsArray
+        };
+
+        // Save local state
+        localStorage.setItem('hbd_card_config', JSON.stringify(cardConfig));
+
+        // Encode config data into base64 string for link
+        const jsonStr = JSON.stringify(cardConfig);
+        const encodedData = btoa(unescape(encodeURIComponent(jsonStr)));
+        
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareUrl = `${baseUrl}?cardData=${encodedData}`;
+
+        document.getElementById('shareUrlInput').value = shareUrl;
+
+        // Generate QR Code
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+            text: shareUrl,
+            width: 120,
+            height: 120,
+            colorDark : "#db2777",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        document.getElementById('shareResultArea').classList.remove('hidden');
+        showToast("บันทึกข้อมูลและสร้าง QR Code สำเร็จ!", "🎉");
+
+        // Update active UI
+        updateRecipientUI();
+        initSpotifyPlayer();
+    }
+
+    // Copy Shareable URL
+    function copyShareUrl() {
+        const input = document.getElementById('shareUrlInput');
+        input.select();
+        document.execCommand('copy');
+        showToast("คัดลอกลิงก์การ์ดวันเกิดเรียบร้อยแล้ว!", "📋");
+    }
+
+    // Preview Recipient Mode directly
+    function previewRecipientCard() {
+        toggleViewMode();
+        showToast("สลับมาหน้าแสดงผลสำหรับเพื่อนแล้ว", "👀");
+    }
+
+    // Helper Toast Notification
+    function showToast(msg, icon = "✨") {
+        const toast = document.getElementById('toast');
+        document.getElementById('toastMsg').innerText = msg;
+        document.getElementById('toastIcon').innerText = icon;
+
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('translate-y-20', 'opacity-0');
+        }, 3000);
+    }
+</script>
+</body>
+</html>
